@@ -85,6 +85,20 @@ app.post("/image", upload.single("image"), (req, res) => {
 		imageUrl: file.path,
 	});
 });
+app.get('/banners',(req,res)=>{ 
+	models.Banner.findAll({
+		limit: 2,
+	  })
+		.then((result) => {
+		  res.send({
+			banners: result, 
+		  });
+		})
+		.catch((error) => {
+		  console.error(error);
+		  res.status(500).send("에러가 발생했습니다");
+		});
+});
 
 app.listen(port, () => {
 	console.log("망고샵의 서버가 구동중 입니다.");
