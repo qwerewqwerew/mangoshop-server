@@ -3,14 +3,27 @@ const cors = require("cors");
 const app = express();
 const models = require("./models");
 const port = 8080;
+const multer = require("multer");
+const upload = multer({
+	storage: multer.diskStorage({
+		destination: function (req, file, cb) {
+			cb(null, "uploads");
+		},
+		filename: function (req, file, cb) {
+			cb(null, file.originalname);
+		},
+	}),
+});
 
-app.use(express.json()); //json 형식의 데이터를 처리할 수 있게 설정하는 코드
-app.use(cors()); //브라우저의 CORS 이슈를 막기 위해 사용하는 코드
+app.use(express.json());
+app.use(cors());
+
+app.use("/uploads", express.static("uploads"));
 
 app.get("/products", (req, res) => {
 	models.Product.findAll({
 		order: [["createdAt", "DESC"]],
-		attributes: ["id", "name", "price", "seller","imageUrl", "createdAt" ],
+		attributes: ["id", "name", "price", "seller", "imageUrl", "createdAt"],
 	})
 		.then((result) => {
 			console.log("PRODUCTS : ", result);
@@ -20,14 +33,15 @@ app.get("/products", (req, res) => {
 		})
 		.catch((error) => {
 			console.error(error);
-			res.send("에러 발생");
+			/* res.send("에러 발생"); */
+			res.status(400).send("에러 발생");
 		});
 });
 
 app.post("/products", (req, res) => {
 	const body = req.body;
-	const { name, description, price, seller } = body;
-	if (!name || !description || !price || !seller) {
+	const { name, description, price, seller ,imageUrl} = body;
+	if (!name || !description || !price || !seller|| !imageUrl) {
 		res.send("모든 필드를 입력해주세요");
 	}
 	models.Product.create({
@@ -35,6 +49,7 @@ app.post("/products", (req, res) => {
 		description,
 		price,
 		seller,
+		imageUrl
 	})
 		.then((result) => {
 			console.log("상품생성결과:", result);
@@ -63,6 +78,14 @@ app.get("/products/:id", (req, res) => {
 		});
 });
 
+app.post("/image", upload.single("image"), (req, res) => {
+	const file = req.file;
+	console.log(file);
+	res.send({
+		imageUrl: file.path,
+	});
+});
+
 app.listen(port, () => {
 	console.log("망고샵의 서버가 구동중 입니다.");
 	models.sequelize
@@ -73,7 +96,6 @@ app.listen(port, () => {
 		.catch(function (err) {
 			console.error(err);
 			console.log("✗ DB 연결 에러");
-			//에러발생시 서버프로세스 종료
 			process.exit();
 		});
 });
